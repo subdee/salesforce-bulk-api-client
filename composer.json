@@ -1,0 +1,11 @@
+{
+  "name": "subdee/SalesforceBulkApiClient",
+  "require": {
+    "php": ">=5.4"
+  },
+  "autoload": {
+    "files": [
+      "src/BulkApiClient.php"
+    ]
+  }
+}
