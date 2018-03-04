@@ -42,6 +42,7 @@ class JobInfo {
 	    if ($json) {
 		    $this->json = true;
 		    $this->payload = empty($payload) ? new stdClass() : (object) $payload;
+		    $this->payload->contentType = 'JSON';
 		} else {
 	        if ($payload != null) {
 	            $this->payload = new SimpleXMLElement($payload);
