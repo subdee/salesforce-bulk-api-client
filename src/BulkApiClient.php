@@ -185,7 +185,7 @@ class BulkApiClient {
     public function createJob(JobInfo $job) {
         $this->validateJob($job);
         $createdJob = $this->post($this->url(array(self::JOB)), $this->contentType, $job->asXml());
-        return new JobInfo($createdJob);
+        return new JobInfo($createdJob, ($job->contentType == self::CONTENT_TYPE_JSON));
     }
 
     /**
@@ -199,7 +199,7 @@ class BulkApiClient {
     public function updateJob(JobInfo $job) {
         $this->validateJob($job);
         $updatedJob = $this->post($this->url(array(self::JOB, $job->getId())), $this->contentType, $job->asXml());
-        return new JobInfo($updatedJob);
+        return new JobInfo($updatedJob, ($job->contentType == self::CONTENT_TYPE_JSON));
     }
 
     private function validateJob(JobInfo $job) {
@@ -235,7 +235,7 @@ class BulkApiClient {
         $job = new JobInfo();
         $job->setId($jobId);
         $job->setState($state);
-        return $this->updateJob($job);
+        return $this->updateJob($job, ($this->contentType == self::CONTENT_TYPE_JSON));
     }
 
     /**
@@ -245,7 +245,7 @@ class BulkApiClient {
      * @return JobInfo
      */
     public function getJobInfo($jobId) {
-        return new JobInfo($this->get($this->url(array(self::JOB, $jobId))));
+        return new JobInfo($this->get($this->url(array(self::JOB, $jobId))), ($this->contentType == self::CONTENT_TYPE_JSON));
     }
 
     /**
@@ -270,7 +270,7 @@ class BulkApiClient {
             throw new Exception("Invalid content type specified for batch");
         }
 
-        return new BatchInfo($this->post($this->url(array(self::JOB, $job->getId(), self::BATCH)), $contentType, $data), ($this->contentType == self::CONTENT_TYPE_JSON));
+        return new BatchInfo($this->post($this->url(array(self::JOB, $job->getId(), self::BATCH)), $contentType, $data), ($job->getContentType() == self::CONTENT_TYPE_JSON));
     }
 
     /**
