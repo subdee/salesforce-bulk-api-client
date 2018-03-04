@@ -185,7 +185,7 @@ class BulkApiClient {
     public function createJob(JobInfo $job) {
         $this->validateJob($job);
         $createdJob = $this->post($this->url(array(self::JOB)), $this->contentType, $job->asXml());
-        return new JobInfo($createdJob, ($job->contentType == self::CONTENT_TYPE_JSON));
+        return new JobInfo($createdJob, ($job->getContentType() == self::JSON));
     }
 
     /**
@@ -199,7 +199,7 @@ class BulkApiClient {
     public function updateJob(JobInfo $job) {
         $this->validateJob($job);
         $updatedJob = $this->post($this->url(array(self::JOB, $job->getId())), $this->contentType, $job->asXml());
-        return new JobInfo($updatedJob, ($job->contentType == self::CONTENT_TYPE_JSON));
+        return new JobInfo($updatedJob, ($job->getContentType() == self::JSON));
     }
 
     private function validateJob(JobInfo $job) {
@@ -231,10 +231,12 @@ class BulkApiClient {
      * @param  $state
      * @return JobInfo
      */
-    public function updateJobState($jobId, $state) {
-        $job = new JobInfo();
-        $job->setId($jobId);
-        $job->setState($state);
+    public function updateJobState($job, $state) {
+	    if (!$job instanceof JobInfo) {
+        	$job = new JobInfo();
+			$job->setId($jobId);
+		}
+		$job->setState($state);
         return $this->updateJob($job, ($this->contentType == self::CONTENT_TYPE_JSON));
     }
 
@@ -269,8 +271,8 @@ class BulkApiClient {
         } else {
             throw new Exception("Invalid content type specified for batch");
         }
-
-        return new BatchInfo($this->post($this->url(array(self::JOB, $job->getId(), self::BATCH)), $contentType, $data), ($job->getContentType() == self::CONTENT_TYPE_JSON));
+        
+        return new BatchInfo($this->post($this->url(array(self::JOB, $job->getId(), self::BATCH)), $contentType, $data), ($job->getContentType() == self::JSON));
     }
 
     /**
@@ -375,7 +377,7 @@ class BulkApiClient {
 
         $httpHeaders = array(
             "X-SFDC-Session: " . $this->sessionId,
-            "Accept: application/xml",
+            "Accept: " . $contentType,
             "User-Agent: " . $this->userAgent,
             "Expect:"
         );
@@ -414,14 +416,14 @@ class BulkApiClient {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         }
 
-        $this->log("REQUEST \n POST: $isPost \n URL: $url \n HTTP HEADERS: \n" . print_r($httpHeaders, true) . " DATA:\n " . htmlspecialchars($data));
+        $this->log("REQUEST \n POST: $isPost \n URL: $url \n HTTP HEADERS: \n" . print_r($httpHeaders, true) . " DATA:\n " . $data);
 
         $chResponse = curl_exec($ch);
 
-        $this->log("RESPONSE \n" . (isset($toFile) ? ("Sent to file: " . $toFile) : htmlspecialchars($chResponse)));
+        $this->log("RESPONSE \n" . (isset($toFile) ? ("Sent to file: " . $toFile) : $chResponse));
 
         if (curl_error($ch) != null) {
-            $this->log("ERROR \n" . htmlspecialchars(curl_error($ch)));
+            $this->log("ERROR \n" . curl_error($ch));
             throw new Exception(curl_error($ch));
         }
 

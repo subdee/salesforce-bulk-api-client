@@ -39,9 +39,11 @@ class JobInfo {
 	private $json = false;
 
     public function __construct($payload = null, $json = false) {
+	    
 	    if ($json) {
 		    $this->json = true;
-		    $this->payload = empty($payload) ? new stdClass() : (object) $payload;
+		    $this->payload = empty($payload) ? new stdClass() : json_decode($payload);
+		    if (empty($payload)) {
 	            $this->payload->id = "";
 	            $this->payload->operation = "";
 	            $this->payload->object = "";
@@ -50,6 +52,7 @@ class JobInfo {
 	            $this->payload->concurrencyMode = "";
 	            $this->payload->contentType = "JSON";
 	            $this->payload->assignmentRuleId = "";
+	        }
 		} else {
 	        if ($payload != null) {
 	            $this->payload = new SimpleXMLElement($payload);

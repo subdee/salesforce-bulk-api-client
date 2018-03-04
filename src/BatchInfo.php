@@ -53,7 +53,7 @@ class BatchInfo {
 
     public function __construct($payload, $json = false) {
 	    $this->json = $json;
-	    
+	     
 	    if ($this->json) {
 		    $this->payload = json_decode($payload);
         } else {
