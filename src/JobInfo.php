@@ -42,19 +42,18 @@ class JobInfo {
 	    if ($json) {
 		    $this->json = true;
 		    $this->payload = empty($payload) ? new stdClass() : (object) $payload;
-		    $this->payload->contentType = 'JSON';
-		} else {
-	        if ($payload != null) {
-	            $this->payload = new SimpleXMLElement($payload);
-	            
 	            $this->payload->id = "";
 	            $this->payload->operation = "";
 	            $this->payload->object = "";
 	            $this->payload->state = "";
 	            $this->payload->externalIdFieldName = "";
 	            $this->payload->concurrencyMode = "";
-	            $this->payload->contentType = "";
+	            $this->payload->contentType = "JSON";
 	            $this->payload->assignmentRuleId = "";
+		} else {
+	        if ($payload != null) {
+	            $this->payload = new SimpleXMLElement($payload);
+	            
 	            
 	        } else {
 	            $this->payload = new SimpleXMLElement("<jobInfo xmlns=\"http://www.force.com/2009/06/asyncapi/dataload\"/>");
