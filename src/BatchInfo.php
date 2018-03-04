@@ -95,10 +95,16 @@ class BatchInfo {
     }
 
     public function getExceptionCode() {
+	    if ($this->json) {
+		    return FALSE;
+	    }
         return $this->payload->exceptionCode;
     }
 
     public function getExceptionMessage() {
+	    if ($this->json) {
+		    return FALSE;
+	    }
         return $this->payload->exceptionMessage;
     }
 
