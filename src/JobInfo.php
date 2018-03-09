@@ -50,7 +50,7 @@ class JobInfo {
 	            $this->payload->state = "";
 	            $this->payload->externalIdFieldName = "";
 	            $this->payload->concurrencyMode = "";
-	            $this->payload->contentType = "JSON";
+	            $this->payload->contentType = "";
 	            $this->payload->assignmentRuleId = "";
 	        }
 		} else {
@@ -173,6 +173,7 @@ class JobInfo {
     }
 
     public function getContentType() {
+	    if ($this->json) return 'JSON';
         return $this->payload->contentType;
     }
 

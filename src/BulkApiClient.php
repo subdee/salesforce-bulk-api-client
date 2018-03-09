@@ -233,8 +233,18 @@ class BulkApiClient {
      */
     public function updateJobState($job, $state) {
 	    if (!$job instanceof JobInfo) {
+		    $jobId = $job;
         	$job = new JobInfo();
 			$job->setId($jobId);
+		} else {
+		    $jobId = $job->getId();
+			if ($job->getContentType() == self::JSON) {
+				$job = new JobInfo(null, TRUE);
+				$job->setId($jobId);
+			} else {
+				$job = new JobInfo();
+				$job->setId($jobId);
+			}
 		}
 		$job->setState($state);
         return $this->updateJob($job, ($this->contentType == self::CONTENT_TYPE_JSON));
