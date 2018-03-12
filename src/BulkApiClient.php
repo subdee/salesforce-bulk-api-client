@@ -58,6 +58,7 @@ class BulkApiClient {
     const CONTENT_TYPE_CSV = "text/csv";
     const CONTENT_TYPE_ZIP_CSV = "zip/csv";
     const CONTENT_TYPE_ZIP_XML = "zip/xml";
+    const CONTENT_TYPE_JSON = "application/json";
 
 
     private $endpoint;
@@ -68,10 +69,14 @@ class BulkApiClient {
     private $includeSessionCookie = false;
     private $logs;
     private $loggingEnabled = false;
+    
+    private $contentType = self::CONTENT_TYPE_XML;
+    
     const CSV = "CSV";
     const XML = "XML";
     const ZIP_CSV = "ZIP_CSV";
     const ZIP_XML = "ZIP_XML";
+    const JSON = "JSON";
 
     /**
      * Create a new Bulk API Client from an existing Partner API enpoint and session id
@@ -79,7 +84,7 @@ class BulkApiClient {
      * @param  string $endpoint endpoint from Async/Bulk, Partner, or Enterprise APIs
      * @param  string $sessionId active Salesforce session id
      */
-    public function __construct($endpoint, $sessionId) {
+    public function __construct($endpoint, $sessionId, $contentType = self::CONTENT_TYPE_XML) {
 		if (!extension_loaded('curl')) {
 			throw new Exception('Missing required cURL extension.');
 		}
@@ -94,6 +99,8 @@ class BulkApiClient {
 	
         $this->endpoint = $this->convertEndpoint($endpoint);
         $this->sessionId = $sessionId;
+        
+        $this->contentType = $contentType;
     }
 
     /**
@@ -177,8 +184,8 @@ class BulkApiClient {
      */
     public function createJob(JobInfo $job) {
         $this->validateJob($job);
-        $createdJob = $this->post($this->url(array(self::JOB)), self::CONTENT_TYPE_XML, $job->asXml());
-        return new JobInfo($createdJob);
+        $createdJob = $this->post($this->url(array(self::JOB)), $this->contentType, $job->asXml());
+        return new JobInfo($createdJob, ($job->getContentType() == self::JSON));
     }
 
     /**
@@ -191,13 +198,17 @@ class BulkApiClient {
      */
     public function updateJob(JobInfo $job) {
         $this->validateJob($job);
-        $updatedJob = $this->post($this->url(array(self::JOB, $job->getId())), self::CONTENT_TYPE_XML, $job->asXml());
-        return new JobInfo($updatedJob);
+        $updatedJob = $this->post($this->url(array(self::JOB, $job->getId())), $this->contentType, $job->asXml());
+        return new JobInfo($updatedJob, ($job->getContentType() == self::JSON));
     }
 
     private function validateJob(JobInfo $job) {
         if ($job->getContentType() == self::CSV && !$this->apiVersionIsAtLeast($this->endpoint, 17.0)) {
             throw new Exception("Content Type 'CSV' only supported in API 17.0 and higher.");
+        }
+        
+        if ($job->getContentType() == self::JSON && !$this->apiVersionIsAtLeast($this->endpoint, 38.0)) {
+            throw new Exception("Content Type 'JSON' only supported in API 38.0 and higher.");
         }
 
         if ($job->getOpertion() == "delete" && !$this->apiVersionIsAtLeast($this->endpoint, 18.0)) {
@@ -220,11 +231,23 @@ class BulkApiClient {
      * @param  $state
      * @return JobInfo
      */
-    public function updateJobState($jobId, $state) {
-        $job = new JobInfo();
-        $job->setId($jobId);
-        $job->setState($state);
-        return $this->updateJob($job);
+    public function updateJobState($job, $state) {
+	    if (!$job instanceof JobInfo) {
+		    $jobId = $job;
+        	$job = new JobInfo();
+			$job->setId($jobId);
+		} else {
+		    $jobId = $job->getId();
+			if ($job->getContentType() == self::JSON) {
+				$job = new JobInfo(null, TRUE);
+				$job->setId($jobId);
+			} else {
+				$job = new JobInfo();
+				$job->setId($jobId);
+			}
+		}
+		$job->setState($state);
+        return $this->updateJob($job, ($this->contentType == self::CONTENT_TYPE_JSON));
     }
 
     /**
@@ -234,7 +257,7 @@ class BulkApiClient {
      * @return JobInfo
      */
     public function getJobInfo($jobId) {
-        return new JobInfo($this->get($this->url(array(self::JOB, $jobId))));
+        return new JobInfo($this->get($this->url(array(self::JOB, $jobId))), ($this->contentType == self::CONTENT_TYPE_JSON));
     }
 
     /**
@@ -253,11 +276,13 @@ class BulkApiClient {
             $contentType = self::CONTENT_TYPE_ZIP_CSV;
         } else if ($job->getContentType() == self::ZIP_XML) {
             $contentType = self::CONTENT_TYPE_ZIP_XML;
+        } else if ($job->getContentType() == self::JSON) {
+            $contentType = self::CONTENT_TYPE_JSON;
         } else {
             throw new Exception("Invalid content type specified for batch");
         }
-
-        return new BatchInfo($this->post($this->url(array(self::JOB, $job->getId(), self::BATCH)), $contentType, $data));
+        
+        return new BatchInfo($this->post($this->url(array(self::JOB, $job->getId(), self::BATCH)), $contentType, $data), ($job->getContentType() == self::JSON));
     }
 
     /**
@@ -268,7 +293,7 @@ class BulkApiClient {
      * @return BatchInfo
      */
     public function getBatchInfo($jobId, $batchId) {
-        return new BatchInfo($this->get($this->url(array(self::JOB, $jobId, self::BATCH, $batchId))));
+        return new BatchInfo($this->get($this->url(array(self::JOB, $jobId, self::BATCH, $batchId))), ($this->contentType == self::CONTENT_TYPE_JSON));
     }
 
     /**
@@ -362,7 +387,7 @@ class BulkApiClient {
 
         $httpHeaders = array(
             "X-SFDC-Session: " . $this->sessionId,
-            "Accept: application/xml",
+            "Accept: " . $contentType,
             "User-Agent: " . $this->userAgent,
             "Expect:"
         );
@@ -401,14 +426,14 @@ class BulkApiClient {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         }
 
-        $this->log("REQUEST \n POST: $isPost \n URL: $url \n HTTP HEADERS: \n" . print_r($httpHeaders, true) . " DATA:\n " . htmlspecialchars($data));
+        $this->log("REQUEST \n POST: $isPost \n URL: $url \n HTTP HEADERS: \n" . print_r($httpHeaders, true) . " DATA:\n " . $data);
 
         $chResponse = curl_exec($ch);
 
-        $this->log("RESPONSE \n" . (isset($toFile) ? ("Sent to file: " . $toFile) : htmlspecialchars($chResponse)));
+        $this->log("RESPONSE \n" . (isset($toFile) ? ("Sent to file: " . $toFile) : $chResponse));
 
         if (curl_error($ch) != null) {
-            $this->log("ERROR \n" . htmlspecialchars(curl_error($ch)));
+            $this->log("ERROR \n" . curl_error($ch));
             throw new Exception(curl_error($ch));
         }
 
@@ -418,7 +443,7 @@ class BulkApiClient {
     }
 
     private function get($url, $toFile = null) {
-        return $this->http(false, $url, null, null, $toFile);
+        return $this->http(false, $url, $this->contentType, null, $toFile);
     }
 
     private function post($url, $contentType, $data) {

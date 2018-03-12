@@ -35,25 +35,44 @@
  */
 
 class JobInfo {
-    private $xml;
+    private $payload;
+	private $json = false;
 
-    public function __construct($xml = null) {
-        if ($xml != null) {
-            $this->xml = new SimpleXMLElement($xml);
-        } else {
-            $this->xml = new SimpleXMLElement("<jobInfo xmlns=\"http://www.force.com/2009/06/asyncapi/dataload\"/>");
-
-            //setting writeable fields in their required sequence; otherwise, API can't parse correctly
-            //if any of them are still empty after  setting values, we unset them before converting to XML
-            $this->xml->id = "";
-            $this->xml->operation = "";
-            $this->xml->object = "";
-            $this->xml->state = "";
-            $this->xml->externalIdFieldName = "";
-            $this->xml->concurrencyMode = "";
-            $this->xml->contentType = "";
-            $this->xml->assignmentRuleId = "";
-        }
+    public function __construct($payload = null, $json = false) {
+	    
+	    if ($json) {
+		    $this->json = true;
+		    $this->payload = empty($payload) ? new stdClass() : json_decode($payload);
+		    if (empty($payload)) {
+	            $this->payload->id = "";
+	            $this->payload->operation = "";
+	            $this->payload->object = "";
+	            $this->payload->state = "";
+	            $this->payload->externalIdFieldName = "";
+	            $this->payload->concurrencyMode = "";
+	            $this->payload->contentType = "";
+	            $this->payload->assignmentRuleId = "";
+	        }
+		} else {
+	        if ($payload != null) {
+	            $this->payload = new SimpleXMLElement($payload);
+	            
+	            
+	        } else {
+	            $this->payload = new SimpleXMLElement("<jobInfo xmlns=\"http://www.force.com/2009/06/asyncapi/dataload\"/>");
+	
+	            //setting writeable fields in their required sequence; otherwise, API can't parse correctly
+	            //if any of them are still empty after  setting values, we unset them before converting to XML
+	            $this->payload->id = "";
+	            $this->payload->operation = "";
+	            $this->payload->object = "";
+	            $this->payload->state = "";
+	            $this->payload->externalIdFieldName = "";
+	            $this->payload->concurrencyMode = "";
+	            $this->payload->contentType = "";
+	            $this->payload->assignmentRuleId = "";
+	        }
+		}
 
         if ($this->getExceptionCode() != "") {
             throw new Exception($this->getExceptionCode() . ": " . $this->getExceptionMessage());
@@ -64,152 +83,162 @@ class JobInfo {
         //removing empty fields to allow API to parse correctly
         //two loops are needed to not cause errors
         $emptyFields = array();
-        foreach ($this->xml as $field=>$value) {
+        foreach ($this->payload as $field=>$value) {
             if ($value == "") {
                 $emptyFields[] = $field;
             }
         }
         foreach ($emptyFields as $field) {
-            unset($this->xml->$field);
+            unset($this->payload->$field);
         }
-
-        return $this->xml->asXML();
+		if ($this->json) {
+			return json_encode($this->payload);
+		} else {
+	        return $this->payload->asXML();
+        }
     }
 
     //SETTERS
     public function setId($id) {
-        $this->xml->id = $id;
+        $this->payload->id = $id;
     }
 
     public function setOpertion($operation) {
-        $this->xml->operation = $operation;
+        $this->payload->operation = $operation;
     }
 
     public function setObject($object) {
-        $this->xml->object = $object;
+        $this->payload->object = $object;
     }
 
     public function setExternalIdFieldName($externalIdFieldName) {
-        $this->xml->externalIdFieldName = $externalIdFieldName;
+        $this->payload->externalIdFieldName = $externalIdFieldName;
     }
 
     public function setAssignmentRuleId($assignmentRuleId) {
-        $this->xml->assignmentRuleId = $assignmentRuleId;
+        $this->payload->assignmentRuleId = $assignmentRuleId;
     }
 
     public function setState($state) {
-        $this->xml->state = $state;
+        $this->payload->state = $state;
     }
 
     public function setConcurrencyMode($concurrencyMode) {
-        $this->xml->concurrencyMode = $concurrencyMode;
+        $this->payload->concurrencyMode = $concurrencyMode;
     }
 
     public function setContentType($contentType) {
-        $this->xml->contentType = $contentType;
+        $this->payload->contentType = $contentType;
     }
 
     //GETTERS
     public function getId() {
-        return $this->xml->id;
+        return $this->payload->id;
     }
 
     public function getOpertion() {
-        return $this->xml->operation;
+        return $this->payload->operation;
     }
 
     public function getObject() {
-        return $this->xml->object;
+        return $this->payload->object;
     }
 
     public function getExternalIdFieldName() {
-        return $this->xml->externalIdFieldName;
+        return $this->payload->externalIdFieldName;
     }
 
     public function getCreatedById() {
-        return $this->xml->createdById;
+        return $this->payload->createdById;
     }
 
     public function getCreatedDate() {
-        return $this->xml->createdDate;
+        return $this->payload->createdDate;
     }
 
     public function getSystemModstamp() {
-        return $this->xml->systemModstamp;
+        return $this->payload->systemModstamp;
     }
 
     public function getState() {
-        return $this->xml->state;
+        return $this->payload->state;
     }
 
     public function getStateMessage() {
-        return $this->xml->stateMessage;
+        return $this->payload->stateMessage;
     }
 
     public function getConcurrencyMode() {
-        return $this->xml->concurrencyMode;
+        return $this->payload->concurrencyMode;
     }
 
     public function getContentType() {
-        return $this->xml->contentType;
+	    if ($this->json) return 'JSON';
+        return $this->payload->contentType;
     }
 
     public function getNumberBatchesQueued() {
-        return $this->xml->numberBatchesQueued;
+        return $this->payload->numberBatchesQueued;
     }
 
     public function getNumberBatchesInProgress() {
-        return $this->xml->numberBatchesInProgress;
+        return $this->payload->numberBatchesInProgress;
     }
 
     public function getNumberBatchesCompleted() {
-        return $this->xml->numberBatchesCompleted;
+        return $this->payload->numberBatchesCompleted;
     }
 
     public function getNumberBatchesFailed() {
-        return $this->xml->numberBatchesFailed;
+        return $this->payload->numberBatchesFailed;
     }
 
     public function getNumberBatchesTotal() {
-        return $this->xml->numberBatchesTotal;
+        return $this->payload->numberBatchesTotal;
     }
 
     public function getNumberRecordsProcessed() {
-        return $this->xml->numberRecordsProcessed;
+        return $this->payload->numberRecordsProcessed;
     }
 
     public function getNumberRetries() {
-        return $this->xml->numberRetries;
+        return $this->payload->numberRetries;
     }
 
     public function getApiVersion() {
-        return $this->xml->apiVersion;
+        return $this->payload->apiVersion;
     }
 
     public function getExceptionCode() {
-        return $this->xml->exceptionCode;
+	    if ($this->json) {
+		    return FALSE;
+	    }
+        return $this->payload->exceptionCode;
     }
 
     public function getExceptionMessage() {
-        return $this->xml->exceptionMessage;
+	    if ($this->json) {
+		    return FALSE;
+	    }
+        return $this->payload->exceptionMessage;
     }
 
     //New in 19.0 Below:
 
     public function getTotalProcessingTime() {
-        return $this->xml->totalProcessingTime;
+        return $this->payload->totalProcessingTime;
     }
 
     public function getApexProcessingTime() {
-        return $this->xml->apexProcessingTime;
+        return $this->payload->apexProcessingTime;
     }
 
     public function getApiActiveProcessingTime() {
-        return $this->xml->apiActiveProcessingTime;
+        return $this->payload->apiActiveProcessingTime;
     }
 
     public function getNumberRecordsFailed() {
-        return $this->xml->numberRecordsFailed;
+        return $this->payload->numberRecordsFailed;
     }
 }
 ?>

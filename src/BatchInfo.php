@@ -48,10 +48,17 @@
 
 class BatchInfo {
 
-    private $xml;
+    private $payload;
+    private $json = false;
 
-    public function __construct($xml) {
-        $this->xml = new SimpleXMLElement($xml);
+    public function __construct($payload, $json = false) {
+	    $this->json = $json;
+	     
+	    if ($this->json) {
+		    $this->payload = json_decode($payload);
+        } else {
+	        $this->payload = new SimpleXMLElement($payload);	        
+        }
 
         if ($this->getExceptionCode() != "") {
             throw new Exception($this->getExceptionCode() . ": " . $this->getExceptionMessage());
@@ -60,57 +67,63 @@ class BatchInfo {
 
     //GETTERS
     public function getId() {
-        return $this->xml->id;
+        return $this->payload->id;
     }
 
     public function getJobId() {
-        return $this->xml->jobId;
+        return $this->payload->jobId;
     }
 
     public function getState() {
-        return $this->xml->state;
+        return $this->payload->state;
     }
 
     public function getStateMessage() {
-        return $this->xml->stateMessage;
+        return $this->payload->stateMessage;
     }
 
     public function getCreatedDate() {
-        return $this->xml->createdDate;
+        return $this->payload->createdDate;
     }
 
     public function getSystemModstamp() {
-        return $this->xml->systemModstamp;
+        return $this->payload->systemModstamp;
     }
 
     public function getNumberRecordsProcessed() {
-        return $this->xml->numberRecordsProcessed;
+        return $this->payload->numberRecordsProcessed;
     }
 
     public function getExceptionCode() {
-        return $this->xml->exceptionCode;
+	    if ($this->json) {
+		    return FALSE;
+	    }
+        return $this->payload->exceptionCode;
     }
 
     public function getExceptionMessage() {
-        return $this->xml->exceptionMessage;
+	    if ($this->json) {
+		    return FALSE;
+	    }
+        return $this->payload->exceptionMessage;
     }
 
     //New in 19.0 Below:
 
     public function getTotalProcessingTime() {
-        return $this->xml->totalProcessingTime;
+        return $this->payload->totalProcessingTime;
     }
 
     public function getApexProcessingTime() {
-        return $this->xml->apexProcessingTime;
+        return $this->payload->apexProcessingTime;
     }
 
     public function getApiActiveProcessingTime() {
-        return $this->xml->apiActiveProcessingTime;
+        return $this->payload->apiActiveProcessingTime;
     }
 
     public function getNumberRecordsFailed() {
-        return $this->xml->numberRecordsFailed;
+        return $this->payload->numberRecordsFailed;
     }
 }
 ?>
